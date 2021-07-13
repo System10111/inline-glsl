@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>5506562d-a6df-4ad4-a49d-96e41eba9b0d</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>inline_glsl</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ClassifierFormats.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)inline_glslPackage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ShaderClassifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ShaderClassifierProvider.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)icon.png" />
+  </ItemGroup>
+</Project>

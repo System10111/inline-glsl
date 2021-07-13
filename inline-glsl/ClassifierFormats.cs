@@ -97,7 +97,7 @@ namespace inline_glsl
 
         [Export(typeof(ClassificationTypeDefinition))]
         [Name("ShaderText")]
-        [BaseDefinition(PredefinedClassificationTypeNames.Punctuation)]
+        [BaseDefinition("punctuation")]
         private static ClassificationTypeDefinition shaderText;
 
         [Export(typeof(ClassificationTypeDefinition))]

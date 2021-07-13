@@ -1,2 +1,7 @@
-/bin/
-/obj/
+/inline-glsl19/bin/
+/inline-glsl19/obj/
+/inline-glsl22/bin/
+/inline-glsl22/obj/
+/inline-glsl/bin/
+/inline-glsl/obj/
+/.vs/

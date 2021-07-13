@@ -127,7 +127,7 @@ namespace inline_glsl
 
 			//the line on which the current span is
 			var line = span.Snapshot.GetLineNumberFromPosition(span.End);
-
+			
 			//use a comment like "// vertex shader:" to denote where glsl should be highlighted
 			var comment_match = Regex.Match(
 				span.GetText(),
