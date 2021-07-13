@@ -51,6 +51,11 @@ namespace inline_glsl
         private static ClassificationTypeDefinition shaderKeywords;
 
         [Export(typeof(ClassificationTypeDefinition))]
+        [Name("ShaderControlKeywords")]
+        [BaseDefinition("keyword - control")]
+        private static ClassificationTypeDefinition shaderControlKeywords;
+
+        [Export(typeof(ClassificationTypeDefinition))]
         [Name("ShaderPreprocessorKeywords")]
         [BaseDefinition(PredefinedClassificationTypeNames.PreprocessorKeyword)]
         private static ClassificationTypeDefinition shaderPreprocessorKeywords;
@@ -99,10 +104,17 @@ namespace inline_glsl
         [Name("ShaderType")]
         [BaseDefinition(PredefinedClassificationTypeNames.Type)]
         private static ClassificationTypeDefinition shaderType;
+
+        [Export(typeof(ClassificationTypeDefinition))]
+        [Name("ShaderFunctions")]
+        [BaseDefinition("cppFunction")]
+        private static ClassificationTypeDefinition shaderFunctions;
+
 #pragma warning restore 169
     }
     [Export(typeof(EditorFormatDefinition))]
     [ClassificationType(ClassificationTypeNames = "ShaderKeywords")]
+    [ClassificationType(ClassificationTypeNames = "ShaderControlKeywords")]
     [ClassificationType(ClassificationTypeNames = "ShaderPreprocessorKeywords")]
     [ClassificationType(ClassificationTypeNames = "ShaderComments")]
     [ClassificationType(ClassificationTypeNames = "ShaderIdentifiers1")]
@@ -113,6 +125,7 @@ namespace inline_glsl
     [ClassificationType(ClassificationTypeNames = "ShaderExcludedCode")]
     [ClassificationType(ClassificationTypeNames = "ShaderText")]
     [ClassificationType(ClassificationTypeNames = "ShaderType")]
+    [ClassificationType(ClassificationTypeNames = "ShaderFunctions")]
     [Name("ShaderClassifierFormat")]
     [UserVisible(true)] // This should be visible to the end user
     [Order(After = DefaultOrderings.Highest)] // Set the priority to be the highest, because we'll be overwriting a string literal

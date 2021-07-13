@@ -1,16 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="inline_glsl.93bc57ec-f58d-473c-b6dc-4432771adbec" Version="1.0" Language="en-US" Publisher="krisi2001" />
+        <Identity Id="inline_glsl.93bc57ec-f58d-473c-b6dc-4432771adbec" Version="1.1" Language="en-US" Publisher="Kristian Rachev" />
         <DisplayName>inline_glsl</DisplayName>
         <Description xml:space="preserve">A VERY basic syntax highlighter for glsl code inside C/C++ string literals.
-This is still very much work-in-progress, so some features may not work and expect lots of bugs.
-Right, each line of the string has to end with \n\ to add the newline in the glsl code, but escape the newline in the C/C++ code.
-I plan on including support for the ".....\n" style and C++ raw strings.
-
-Much more down the road, I plan on including automatic addition of newline escape characters, intellisense, and, if it doesn't turn out to be too complicated, a window to visualise shaders and tweak inputs.
-
-This extension is fully open-source - the code can be found here: </Description>
+This is still very much work-in-progress, so some features may not work and expect lots of bugs.</Description>
+        <MoreInfo>https://github.com/System10111/inline-glsl</MoreInfo>
+        <ReleaseNotes>More Colours! Support for different styles of strings!</ReleaseNotes>
+        <Icon>icon.png</Icon>
         <Preview>true</Preview>
     </Metadata>
     <Installation>
