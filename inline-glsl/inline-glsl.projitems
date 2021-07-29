@@ -13,6 +13,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)inline_glslPackage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShaderClassifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShaderClassifierProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ShaderTagger.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)icon.png" />

@@ -1,9 +1,14 @@
-﻿using Microsoft.VisualStudio.Language.StandardClassification;
+﻿using EnvDTE80;
+using Microsoft.VisualStudio.Language.StandardClassification;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Tagging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace inline_glsl
@@ -13,6 +18,13 @@ namespace inline_glsl
 	/// </summary>
 	internal class ShaderClassifier : IClassifier
 	{
+		public delegate void ResponseDelegate(string s);
+		[DllImport("glslang_wrapper.dll", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+		public static extern void compile_shader(string shader, int stage, ResponseDelegate response);
+
+
+		public ShaderTagger tagger = null;
+		public ErrorListProvider errorList;
 		/// <summary>
 		/// Classification type.
 		/// </summary>
@@ -52,6 +64,7 @@ namespace inline_glsl
 			this.typeClassifier = registry.GetClassificationType("ShaderType");
 			this.functionsClassifier = registry.GetClassificationType("ShaderFunctions");
 			Classifications = classifications;
+			this.errorList = new ErrorListProvider(ServiceProvider.GlobalProvider);
 		}
 
 		#region IClassifier
@@ -68,25 +81,122 @@ namespace inline_glsl
 		/// </remarks>
 		public event EventHandler<ClassificationChangedEventArgs> ClassificationChanged;
 		
+#pragma warning restore 67
 
 		public enum StringLiteralType
-        {
+		{
 			Invalid = 0, EscapedNewlines, AdjacentStrings, RawString
-        }
+		}
+		public enum ShaderType
+		{
+			Invalid = 0, Vertex, Fragment, Compute
+		}
 
-		public struct GlslData
-        {
+		public class GlslData
+		{
 			public ITrackingSpan span;
+			public ITextSnapshot snapshot;
+			public ShaderType shaderType;
 			public StringLiteralType literalType;
-            public GlslData(ITrackingSpan span, StringLiteralType literalType)
-            {
-                this.span = span;
-                this.literalType = literalType;
-            }
-        }
+			public List<(ITrackingSpan, string)> errors;
+			public GlslData()
+			{
+			}
 
-#pragma warning restore 67
+			public GlslData(ITrackingSpan span, StringLiteralType literalType, ShaderType shaderType)
+			{
+				errors = new List<(ITrackingSpan, string)>();
+				this.span = span;
+				this.literalType = literalType;
+				this.shaderType = shaderType;
+			}
+		}
+
 		public Dictionary<int, GlslData> glsl_strings = new Dictionary<int, GlslData>();
+
+		public void UpdateErrors(int line)
+		{
+			var string_type = glsl_strings[line].literalType;
+			StringBuilder compiler_input = new StringBuilder();
+			compiler_input.Append(new string('\n', line-1));
+			foreach (var cur_line in glsl_strings[line].span.GetSpan(glsl_strings[line].snapshot).GetText().Split(new[] { "\n\r", "\n" }, StringSplitOptions.None))
+			{
+				var l = cur_line;
+				if(l.EndsWith("\r")) l = l.Remove(l.Length - 1);
+				if (l.EndsWith("\\0")) l = l.Remove(l.Length - 2);
+				if (string_type == StringLiteralType.EscapedNewlines && l.EndsWith("\\n\\"))
+				{
+					l = l.Remove(l.Length - 3);
+				}
+				if (string_type == StringLiteralType.AdjacentStrings && l.EndsWith("\\n\""))
+				{
+					l = l.Remove(l.Length - 3);
+				}
+				if (string_type == StringLiteralType.AdjacentStrings && l.TrimStart().StartsWith("\""))
+				{
+					var arr = l.ToCharArray();
+					arr[l.IndexOf('"')] = ' ';
+					l = new string(arr);
+				}
+				if (string_type == StringLiteralType.RawString)
+				{
+					// I've found nothing that needs to be done for raw string, but I'll leave this if here for completeness' sake
+				}
+				compiler_input.AppendLine(l);
+			}
+			string compiler_input_str = compiler_input.ToString();
+			compile_shader(compiler_input_str, (int)glsl_strings[line].shaderType, s =>
+			{
+				glsl_strings[line].errors.Clear();
+				errorList.Tasks.Clear();
+				foreach (var e in s.Split("\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries))
+				{
+					if (!e.Contains("ERROR:") || e.Contains("compilation terminated") || e.Contains("No code generated.")) continue;
+					var loc_match = Regex.Match(e, "[0-9]+:[0-9]+", RegexOptions.IgnoreCase);
+					if (!loc_match.Success) continue;
+					var loc = (from n in loc_match.Value.Split(':') select int.Parse(n)).ToList();
+					var line_span = glsl_strings[line].snapshot.GetLineFromLineNumber(loc[1]);
+
+					var start = line_span.Start;
+					while ((char.IsWhiteSpace(start.GetChar()) || 
+							(start.GetChar() == '"' && string_type == StringLiteralType.AdjacentStrings)
+						) && start < line_span.End
+					) start += 1;
+
+					glsl_strings[line].errors.Add((
+						glsl_strings[line].snapshot.CreateTrackingSpan(
+							new SnapshotSpan(start, line_span.End).Span,
+							SpanTrackingMode.EdgeInclusive),
+						e
+					));
+
+					var err = new ErrorTask()
+					{
+						ErrorCategory = TaskErrorCategory.Error,
+						Category = TaskCategory.BuildCompile,
+						Text = e,
+						//Document = line_span.Snapshot.TextBuffer.,
+						Line = loc[1],
+						Column = 0,
+						//HierarchyItem = hierarchyItem
+					};
+
+
+					err.Navigate += (sender, args) =>
+					{
+						err.Line++;
+						errorList.Navigate(err, Guid.Parse(EnvDTE.Constants.vsViewKindCode));
+						err.Line--;
+					};
+
+					errorList.Tasks.Add(err);  // add item
+				}
+				errorList.Show();
+			});
+
+			tagger?.raiseTagsChanged(new SnapshotSpanEventArgs(glsl_strings[line].span.GetSpan(glsl_strings[line].snapshot)));
+		}
+
 		public IList<ClassificationSpan> GetClassificationSpans(SnapshotSpan span)
 		{
 			//declare glsl tokens
@@ -142,6 +252,10 @@ namespace inline_glsl
 					new Span(span.Start + comment_match.Index, comment_match.Length)),
 					typeClassifier
 				));
+				ShaderType shader_type = ShaderType.Invalid;
+				if (comment_match.Value.ToLower().Contains("vertex")) shader_type = ShaderType.Vertex;
+				if (comment_match.Value.ToLower().Contains("fragment")) shader_type = ShaderType.Fragment;
+				if (comment_match.Value.ToLower().Contains("compute")) shader_type = ShaderType.Compute;
 				// now find the shader string
 				var index = span.Start + comment_match.Index + comment_match.Length;
 				// find the opening quotes
@@ -156,13 +270,13 @@ namespace inline_glsl
 					}
 					index = index + 1;
 				}
-				StringLiteralType stringType = StringLiteralType.Invalid;
+				StringLiteralType string_type = StringLiteralType.Invalid;
 				SnapshotPoint string_start;
 				SnapshotPoint string_end = new SnapshotPoint();
 				if (span.Snapshot[index - 1] == 'R')
 				{
 					//this is a raw string
-					stringType = StringLiteralType.RawString;
+					string_type = StringLiteralType.RawString;
 					index = index + 1; // move away from quote
 					//find the first perenthesis, and store the delimiter along the way
 					List<char> delimiter = new List<char>();
@@ -224,15 +338,15 @@ namespace inline_glsl
 							if (!char.IsWhiteSpace(span.Snapshot[index2]))
 							{
 								if (first) //a single string, with escaped newlines
-									stringType = StringLiteralType.EscapedNewlines;
+									string_type = StringLiteralType.EscapedNewlines;
 								else
-									stringType = StringLiteralType.AdjacentStrings;
+									string_type = StringLiteralType.AdjacentStrings;
 								string_end = index;
 								break;
 							}
 							index2 = index2 + 1;
 						}
-						if (stringType != StringLiteralType.Invalid) break; //we found the end of it
+						if (string_type != StringLiteralType.Invalid) break; //we found the end of it
 						index = index2 + 1;
 						first = false;
 					}
@@ -242,7 +356,10 @@ namespace inline_glsl
 				ClassificationChanged.Invoke(this, new ClassificationChangedEventArgs(snap_span.GetSpan(span.Snapshot)));
 				if (!glsl_strings.ContainsKey(line)) glsl_strings.Add(line, new GlslData());
 
-				glsl_strings[line] = new GlslData(snap_span, stringType);
+				glsl_strings[line] = new GlslData(snap_span, string_type, shader_type);
+
+				glsl_strings[line].snapshot = span.Snapshot;
+				UpdateErrors(line);
 			} else if (glsl_strings.ContainsKey(line)) 
 			{
 				glsl_strings.Remove(line);
@@ -253,14 +370,16 @@ namespace inline_glsl
 			var span_line = (from k in glsl_strings.Keys where k <= line select k).DefaultIfEmpty(-1).Max();
 			if (span_line == -1) return result;
 
-			// if the snapshot is just pretend it is correct and invalidate the comment line
-			//if (span.Snapshot != glsl_strings[span_line].span.)
-			//{
-			//	var d = glsl_strings[span_line];
-			//	d.span = new SnapshotSpan(span.Snapshot, glsl_strings[span_line].span.Span);
-			//	glsl_strings[span_line] = d;
-			//	ClassificationChanged.Invoke(this, new ClassificationChangedEventArgs(span.Snapshot.GetLineFromLineNumber(span_line).Extent));
-			//}
+			// if the snapshot is different, update the error tags
+			if (span.Snapshot != glsl_strings[span_line].snapshot)
+			{
+				//var d = glsl_strings[span_line];
+				//d.span = new SnapshotSpan(span.Snapshot, glsl_strings[span_line].span.Span);
+				//glsl_strings[span_line] = d;
+				//ClassificationChanged.Invoke(this, new ClassificationChangedEventArgs(span.Snapshot.GetLineFromLineNumber(span_line).Extent));
+				glsl_strings[span_line].snapshot = span.Snapshot;
+				UpdateErrors(span_line);
+			}
 			//calculate what is actually inside the glsl string
 			var inter_or_null = span.Intersection(glsl_strings[span_line].span.GetSpan(span.Snapshot));
 			if (inter_or_null == null) return result;
@@ -295,7 +414,7 @@ namespace inline_glsl
 			bool after_dot = false;
 			//iterate all words
 			for(var i = inter.Start; i < inter.End;)
-            {
+			{
 				//move away from whitespaces
 				while (Char.IsWhiteSpace(i.GetChar())) i = i + 1;
 				if (i >= inter.End) break;
@@ -309,9 +428,9 @@ namespace inline_glsl
 				if ("-.,;[](){}".Contains(first_char))
 				{
 					if (first_char == '.')
-                    {
+					{
 						after_dot = true;
-                    }
+					}
 					c_type = operatorsClassifier;
 					end_of_token = i + 1;
 				}
@@ -328,13 +447,13 @@ namespace inline_glsl
 					while (end_of_token < inter.End && "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".Contains(end_of_token.GetChar())) 
 						end_of_token = end_of_token + 1;
 					if(after_dot)
-                    {
+					{
 						after_dot = false;
 						c_type = identifiers2Classifier;
-                    } else
-                    {
+					} else
+					{
 						c_type = identifiers1Classifier;
-                    }
+					}
 				}
 				if (first_char == '#')
 				{
@@ -343,31 +462,31 @@ namespace inline_glsl
 						end_of_token = end_of_token + 1;
 					c_type = preprocessorKeywordsClassifier;
 				} else if(first_char == '/' && (i+1).GetChar() == '/')
-                {
+				{
 					comment = true;
 				}
 				var word = new SnapshotSpan(i, end_of_token);
 
 				if(comment)
-                {
+				{
 					c_type = commentsClassifier;
-                } else if (word.GetText().StartsWith("#version"))
-                {
+				} else if (word.GetText().StartsWith("#version"))
+				{
 					c_type = preprocessorKeywordsClassifier;
 					version = 1;
-                } else if(version == 1)
-                {
+				} else if(version == 1)
+				{
 					c_type = numbersClassifier;
 					version = 2;
 				} else if (version == 2)
-                {
+				{
 					c_type = textClassifier;
 					version = 0;
 				} else if (glsl_keywords.Contains(word.GetText()))
-                {
+				{
 					c_type = keywordsClassifier;
 				} else if (glsl_control_keywords.Contains(word.GetText()))
-                {
+				{
 					c_type = controlKeywordsClassifier;
 				}
 				else if (glsl_builtin_functions.Contains(word.GetText()))
@@ -375,16 +494,16 @@ namespace inline_glsl
 					c_type = functionsClassifier;
 				}
 				else if (word.GetText().StartsWith("gl_"))
-                {
+				{
 					c_type = identifiers3Classifier;
-                }
+				}
 
 
 				result.Add(new ClassificationSpan(word,
 					c_type
 				));
 				i = end_of_token;
-            }
+			}
 
 
 			return result;

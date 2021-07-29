@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="inline_glsl.93bc57ec-f58d-473c-b6dc-4432771adbec" Version="1.1" Language="en-US" Publisher="Kristian Rachev" />
+        <Identity Id="inline_glsl.93bc57ec-f58d-473c-b6dc-4432771adbec" Version="1.2" Language="en-US" Publisher="Kristian Rachev" />
         <DisplayName>inline_glsl</DisplayName>
         <Description xml:space="preserve">A VERY basic syntax highlighter for glsl code inside C/C++ string literals.
 This is still very much work-in-progress, so some features may not work and expect lots of bugs.</Description>
         <MoreInfo>https://github.com/System10111/inline-glsl</MoreInfo>
-        <ReleaseNotes>More Colours! Support for different styles of strings!</ReleaseNotes>
+        <ReleaseNotes >Leveraging the official glslang validator, compile errors for shaders are now provided!</ReleaseNotes>
         <Icon>icon.png</Icon>
         <Preview>true</Preview>
     </Metadata>

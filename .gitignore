@@ -5,3 +5,11 @@
 /inline-glsl/bin/
 /inline-glsl/obj/
 /.vs/
+/Debug/
+/Release/
+/glslang_wrapper/Debug/
+/glslang_wrapper/Release/
+/glslang_wrapper/x64/
+/glslang_wrapper/lib/x86/Debug
+/glslang_wrapper/lib/x64/Debug
+/out/

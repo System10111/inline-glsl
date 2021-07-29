@@ -1,19 +1,24 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <StartProgram>F:\vs\Common7\IDE\devenv.exe</StartProgram>
-    <DeployTargetInstanceId>22fb8fa0</DeployTargetInstanceId>
+    <StartProgram>D:\vs2022\Common7\IDE\devenv.exe</StartProgram>
+    <DeployTargetInstanceId>
+    </DeployTargetInstanceId>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartProgram>F:\vs\Common7\IDE\devenv.exe</StartProgram>
+    <StartProgram>D:\vs2022\Common7\IDE\devenv.exe</StartProgram>
     <DeployTargetInstanceId>
     </DeployTargetInstanceId>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <StartProgram>F:\vs\Common7\IDE\devenv.exe</StartProgram>
-    <DeployTargetInstanceId>22fb8fa0</DeployTargetInstanceId>
+    <DeployTargetInstanceId>
+    </DeployTargetInstanceId>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <DeployTargetInstanceId />
+  </PropertyGroup>
+  <PropertyGroup>
+    <ProjectView>ProjectFiles</ProjectView>
   </PropertyGroup>
 </Project>

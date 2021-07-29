@@ -74,6 +74,12 @@
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\glslang_wrapper\glslang_wrapper.vcxproj">
+      <Project>{b0a24aa1-43ed-4f33-a897-a7685a5009e4}</Project>
+      <Name>glslang_wrapper</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="..\inline-glsl\inline-glsl.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
